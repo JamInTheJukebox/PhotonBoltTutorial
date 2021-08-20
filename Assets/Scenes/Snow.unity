@@ -690,7 +690,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a97cbb615aa160b418c1c9bda2a9f8b3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _setupPanel: {fileID: 0}
+  _sceneCamera: {fileID: 2033385441}
+  _setupPanel: {fileID: 720510645}
 --- !u!4 &661353809
 Transform:
   m_ObjectHideFlags: 0

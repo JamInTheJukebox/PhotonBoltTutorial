@@ -4,7 +4,12 @@ using Bolt;
 public class PlayerSetupController : GlobalEventListener
 {
     [SerializeField]
+    private Camera _sceneCamera;
+
+    [SerializeField]
     private GameObject _setupPanel;
+
+    public Camera SceneCamera { get => _sceneCamera; }
 
     public override void SceneLoadLocalDone(string scene, IProtocolToken token)
     {

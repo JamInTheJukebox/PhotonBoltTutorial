@@ -4,6 +4,8 @@ using Bolt;
 public class PlayerController : EntityBehaviour<IPhysicsState>
 {
     private PlayerMotor _playerMotor;
+    private PlayerWeapons _playerWeapons;
+    // basic movement.
     private bool _forward;
     private bool _backward;
     private bool _left;
@@ -12,6 +14,11 @@ public class PlayerController : EntityBehaviour<IPhysicsState>
     private float _pitch;
     private bool _jump;
 
+    // shooting
+    private bool _fire;
+    private bool _aiming;
+    private bool _reload;
+
     private bool _hasControl = false;
 
     private float _mouseSensitivity = 5f;
@@ -19,6 +26,7 @@ public class PlayerController : EntityBehaviour<IPhysicsState>
     public void Awake()
     {
         _playerMotor = GetComponent<PlayerMotor>();
+        _playerWeapons = GetComponent<PlayerWeapons>();
     }
 
     public override void Attached()
@@ -26,10 +34,12 @@ public class PlayerController : EntityBehaviour<IPhysicsState>
         if (entity.HasControl)
         {
             _hasControl = true;
+            GUI_Controller.current.ShowHealth(true);
         }
 
         Init(entity.HasControl);
         _playerMotor.Init(entity.HasControl);
+        _playerWeapons.Init();
     }
 
     public void Init(bool isMine)
@@ -55,6 +65,12 @@ public class PlayerController : EntityBehaviour<IPhysicsState>
         _right = Input.GetKey(KeyCode.D);
         _jump = Input.GetKeyDown(KeyCode.Space);        // getkey
 
+        _fire = Input.GetMouseButton(0);
+
+        _aiming = Input.GetMouseButton(1);
+        _reload = Input.GetKeyDown(KeyCode.R);
+
+
         _yaw += Input.GetAxisRaw("Mouse X") * _mouseSensitivity;
         _yaw %= 360f;
         _pitch += -Input.GetAxisRaw("Mouse Y") * _mouseSensitivity;
@@ -72,9 +88,14 @@ public class PlayerController : EntityBehaviour<IPhysicsState>
         input.Pitch = _pitch;
         input.Jump = _jump;
 
+        input.Fire = _fire;
+        input.Aiming = _aiming;
+        input.Reload = _reload;
+
         entity.QueueInput(input);
 
         _playerMotor.ExecuteCommand(_forward, _backward, _left, _right, _jump, _yaw, _pitch);
+        _playerWeapons.ExecuteCommand(_fire, _aiming, _reload, BoltNetwork.ServerFrame % 1024);
     }
 
 
@@ -89,7 +110,6 @@ public class PlayerController : EntityBehaviour<IPhysicsState>
         else
         {
             PlayerMotor.State motorState = new PlayerMotor.State();
-
             if (!entity.HasControl)
             {
                 motorState = _playerMotor.ExecuteCommand(
@@ -100,6 +120,13 @@ public class PlayerController : EntityBehaviour<IPhysicsState>
                 cmd.Input.Jump,
                 cmd.Input.Yaw,
                 cmd.Input.Pitch);
+
+                _playerWeapons.ExecuteCommand(
+                cmd.Input.Fire,
+                cmd.Input.Aiming,
+                cmd.Input.Reload,
+                cmd.ServerFrame % 1024
+                );
             }
 
             cmd.Result.Position = motorState.position;

@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using Bolt;
 
-public class PlayerMotor : EntityBehaviour<IPhysicsState>
+public class PlayerMotor : EntityBehaviour<IPlayerState>
 {
     [SerializeField]
     private Camera _cam = null;
@@ -18,9 +18,19 @@ public class PlayerMotor : EntityBehaviour<IPhysicsState>
     private bool _isGrounded = false;
     private float _maxAngle = 45f;
 
+    [SerializeField]
+    private int _totalLife = 250;
+    public int TotalLife
+    {
+        get { return _totalLife; }
+    }
+
+    SphereCollider _headCollider;
+
     private void Awake()
     {
         _networkRigidbody = GetComponent<NetworkRigidBody>();
+        _headCollider = GetComponent<SphereCollider>();
     }
 
     public void Init(bool isMine)
@@ -63,6 +73,9 @@ public class PlayerMotor : EntityBehaviour<IPhysicsState>
         _cam.transform.localEulerAngles = new Vector3(pitch, 0f, 0f);
         transform.rotation = Quaternion.Euler(0, yaw, 0);
 
+        if (entity.IsOwner)
+            state.Pitch = (int)pitch;
+
         State stateMotor = new State();
         stateMotor.position = transform.position;
         stateMotor.rotation = yaw;
@@ -70,6 +83,14 @@ public class PlayerMotor : EntityBehaviour<IPhysicsState>
         return stateMotor;      // return result of movement.
     }
 
+
+    public void SetPitch()
+    {
+        if (!entity.IsControllerOrOwner)
+        {
+            _cam.transform.localEulerAngles = new Vector3(state.Pitch, 0f, 0f);
+        }
+    }
     private void FixedUpdate()
     {
         if (entity.IsAttached)
@@ -125,6 +146,31 @@ public class PlayerMotor : EntityBehaviour<IPhysicsState>
         }
     }
 
+    public bool IsHeadshot(Collider c)
+    {
+        return c == _headCollider;
+    }
+
+    public void Life(PlayerMotor killer, int life)
+    {
+        if (entity.IsOwner)
+        {
+            int value = state.LifePoints + life;
+
+            if(value < 0)
+            {
+                state.LifePoints = 0;
+            }
+            else if(value > _totalLife)
+            {
+                state.LifePoints = _totalLife;
+            }
+            else
+            {
+                state.LifePoints = value;
+            }
+        }
+    }
     public struct State     // return result.
     {
         public Vector3 position;
